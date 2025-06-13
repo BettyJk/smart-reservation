@@ -43,7 +43,7 @@ db-main/
 ### Setup and Run
 1. Clone the repository:
    ```sh
-   git clone <repo-url>
+   git clone <https://github.com/BettyJk/smart-reservation>
    cd db-main
    ```
 2. Start the services:
