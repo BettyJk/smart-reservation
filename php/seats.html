@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Classroom Reservation - Seat Map</title>
+    <link href="https://fonts.googleapis.com/css?family=Roboto:400,500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
+            background: #f6f8fa;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 900px;
+            margin: 2em auto;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 24px #0001;
+            padding: 2em 2.5em 2.5em 2.5em;
+        }
+        h1, h2, h3 {
+            color: #1976d2;
+            font-weight: 500;
+            margin-top: 0;
+        }
+        .card {
+            background: #f9fbfd;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px #0001;
+            padding: 1.5em 2em;
+            margin-bottom: 2em;
+        }
+        label {
+            display: block;
+            margin-top: 1.2em;
+            color: #333;
+            font-weight: 500;
+        }
+        input[type="file"], input[type="date"], input[type="time"], select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #b0bec5;
+            border-radius: 6px;
+            margin-top: 0.5em;
+            font-size: 1em;
+            background: #f4f7fa;
+            transition: border 0.2s;
+        }
+        input[type="file"] {
+            padding: 6px;
+            background: #fff;
+        }
+        input:focus, select:focus {
+            border-color: #1976d2;
+            outline: none;
+        }
+        button {
+            background: #1976d2;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 10px 22px;
+            font-size: 1em;
+            font-weight: 500;
+            margin-top: 1.2em;
+            cursor: pointer;
+            transition: background 0.2s, box-shadow 0.2s;
+            box-shadow: 0 2px 8px #1976d220;
+        }
+        button:hover {
+            background: #1256a3;
+        }
+        .error {
+            color: #d32f2f;
+            margin-top: 0.5em;
+            font-weight: 500;
+        }
+        .success {
+            color: #388e3c;
+            margin-top: 0.5em;
+            font-weight: 500;
+        }
+        .seat-info {
+            margin: 1em 0 1.5em 0;
+            font-size: 1.1em;
+            color: #1976d2;
+            font-weight: 500;
+        }
+        #myReservationsTable {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1em;
+            background: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px #0001;
+        }
+        #myReservationsTable th, #myReservationsTable td {
+            border: 1px solid #e3e7ea;
+            padding: 10px 8px;
+            text-align: left;
+            font-size: 0.98em;
+        }
+        #myReservationsTable th {
+            background: #e3f2fd;
+            color: #1976d2;
+            font-weight: 500;
+        }
+        #myReservationsTable tr:nth-child(even) {
+            background: #f6f8fa;
+        }
+        #myReservationsTable button {
+            background: #e53935;
+            color: #fff;
+            padding: 6px 14px;
+            font-size: 0.95em;
+            border-radius: 4px;
+            margin: 0;
+            box-shadow: none;
+        }
+        #myReservationsTable button:hover {
+            background: #b71c1c;
+        }
+        #seatMap {
+            display: flex;
+            flex-wrap: wrap;
+            width: 440px;
+            margin-bottom: 2em;
+            background: #f4f7fa;
+            border-radius: 10px;
+            padding: 1em;
+            box-shadow: 0 2px 8px #0001;
+        }
+        .seat {
+            width: 40px; height: 40px; margin: 5px; border-radius: 6px;
+            display: flex; align-items: center; justify-content: center;
+            background: #e0e0e0; cursor: pointer; border: 2px solid #bbb;
+            transition: background 0.2s, border 0.2s;
+            font-weight: 500;
+            font-size: 1.1em;
+        }
+        .seat.available { background: #b2ffb2; border-color: #4caf50; }
+        .seat.pending { background: #ffe082; border-color: #ff9800; }
+        .seat.approved { background: #ffb2b2; border-color: #f44336; }
+        .seat.selected { background: #2196f3; color: #fff; border-color: #1976d2; }
+        #reservationForm { display: none; margin-top: 2em; }
+        .notification {
+            background: #e1f5fe; padding: 10px; margin-bottom: 10px; border-left: 5px solid #039be5;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px #1976d220;
+        }
+        #timelineBoard {
+            margin-top: 2em;
+            background: #f9fbfd;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px #0001;
+            padding: 1.2em 1em 1.5em 1em;
+        }
+        #timelineBoard table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.97em;
+        }
+        #timelineBoard th {
+            background: #e3f2fd;
+            color: #1976d2;
+            border: 1px solid #e3e7ea;
+            font-weight: 500;
+            padding: 6px 0;
+        }
+        #timelineBoard td {
+            border: 1px solid #e3e7ea;
+            height: 24px;
+            background: #e0e0e0;
+            position: relative;
+            padding: 0;
+        }
+        #timelineBoard td[title]:hover::after {
+            content: attr(title);
+            position: absolute;
+            left: 50%;
+            top: -32px;
+            transform: translateX(-50%);
+            background: #fff;
+            color: #1976d2;
+            border: 1px solid #1976d2;
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 0.95em;
+            white-space: pre;
+            z-index: 10;
+            box-shadow: 0 2px 8px #1976d220;
+        }
+        #yearInfo {
+            margin-bottom: 1em;
+            color: #1976d2;
+            font-weight: 500;
+            background: #e3f2fd;
+            border-radius: 6px;
+            padding: 10px 18px;
+            box-shadow: 0 2px 8px #1976d220;
+        }
+        .logout-btn {
+            background: #fff;
+            color: #1976d2;
+            border: 1px solid #1976d2;
+            border-radius: 6px;
+            padding: 8px 18px;
+            font-size: 1em;
+            font-weight: 500;
+            float: right;
+            margin-top: 2em;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s;
+        }
+        .logout-btn:hover {
+            background: #1976d2;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <button class="logout-btn" id="logoutBtn" style="position:fixed;top:24px;right:36px;z-index:1000;">Logout</button>
+    <div class="container">
+        <div id="notifications" style="margin-bottom:1em;"></div>
+        <h1 id="reserveSeatTitle">Reserve a Seat</h1>
+        <div id="studentReserveSection">
+            <label>Date:
+                <input type="date" id="reservationDate" value="">
+            </label>
+            <div id="studentTimeFields" style="display:block;">
+                <label>Start Time:
+                    <input type="time" id="startTime" required min="08:30" max="23:00">
+                </label>
+                <label>End Time:
+                    <input type="time" id="endTime" required min="08:30" max="23:00">
+                </label>
+            </div>
+            <div id="seatMap" style="display:none;"></div>
+            <form id="reservationForm" style="display:none;">
+                <h2>Reserve Seat <span id="selectedSeatNum"></span></h2>
+                <button type="submit">Confirm Reservation</button>
+                <div id="formMsg"></div>
+            </form>
+        </div>
+        <div id="teacherReserve" style="display:none; margin-bottom:2em;">
+            <h2>Reserve Whole Classroom for a Lesson</h2>
+            <form id="reserveClassroomForm">
+                <label>Date:
+                    <input type="date" id="lessonDate" required>
+                </label>
+                <label>Start Time:
+                    <input type="time" id="lessonStartTime" required min="08:30" max="23:00">
+                </label>
+                <label>End Time:
+                    <input type="time" id="lessonEndTime" required min="08:30" max="23:00">
+                </label>
+                <button type="submit">Reserve Whole Classroom</button>
+                <div id="teacherMsg"></div>
+            </form>
+        </div>
+        <h2>My Reservations</h2>
+        <table id="myReservationsTable">
+            <thead>
+                <tr><th>Seat</th><th>Date</th><th>Start</th><th>End</th><th>Status</th><th>Confirmation</th><th>Action</th></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        <div id="myResMsg"></div>
+        <div id="timelineBoard"></div>
+        <div id="tooltip" style="display:none;position:absolute;z-index:1000;background:#fff;border:1px solid #888;padding:4px 8px;border-radius:4px;box-shadow:0 2px 8px #0002;"></div>
+    </div>
+    <script>
+    let selectedSeatId = null;
+    let selectedSeatNum = null;
+    let seatData = [];
+    let isTeacher = false;
+    let userYear = null;
+    let userRole = null;
+    let dailyLimitMinutes = 0;
+    let dailyLimitText = '';
+    let lastQRSeatId = null; // Track last scanned seat via QR
+    let lastQRSeatNum = null;
+
+    // Set today's date as default
+    document.getElementById('reservationDate').value = new Date().toISOString().slice(0,10);
+
+    // Fetch user info (year/role) on page load
+    function fetchUserYearAndLimit() {
+        fetch('login.php', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({check: true})})
+          .then(res => res.json())
+          .then(data => {
+            if (data.success && data.role === 'student') {
+                userRole = 'student';
+                userYear = data.year || null;
+                if (userYear) {
+                    let limits = {'3': 240, '4': 360, '5': 480};
+                    dailyLimitMinutes = limits[userYear];
+                    dailyLimitText = userYear + 'rd';
+                    if (userYear === '4') dailyLimitText = '4th';
+                    if (userYear === '5') dailyLimitText = '5th';
+                    if (!document.getElementById('yearInfo')) {
+                      document.getElementById('studentReserveSection').insertAdjacentHTML('afterbegin', `<div id='yearInfo' style='margin-bottom:1em;color:#1976d2;font-weight:500;'>You are a <b>${dailyLimitText} year</b> student. Daily reservation limit: <b>${dailyLimitMinutes/60} hours</b>.</div>`);
+                    }
+                }
+            }
+          });
+    }
+    fetchUserYearAndLimit();
+
+    function fetchSeats() {
+        if (isTeacher) return;
+        const classroomId = 1;
+        const date = document.getElementById('reservationDate').value;
+        let startTime = document.getElementById('startTime') ? document.getElementById('startTime').value : '';
+        let endTime = document.getElementById('endTime') ? document.getElementById('endTime').value : '';
+        // Only fetch if both times are set
+        if (!startTime || !endTime) {
+            document.getElementById('seatMap').innerHTML = '<div style="color:#888;">Select start and end time to see seat availability.</div>';
+            return;
+        }
+        document.getElementById('seatMap').style.display = '';
+        fetch(`seats.php?classroom_id=${classroomId}&reservation_date=${date}&start_time=${startTime}&end_time=${endTime}`)
+            .then(res => res.json())
+            .then(data => {
+                // Support both old and new API response
+                seatData = Array.isArray(data) ? data : (data.seats || []);
+                renderSeatMap();
+            });
+    }
+    function renderSeatMap() {
+        const seatMap = document.getElementById('seatMap');
+        seatMap.innerHTML = '';
+        seatData.forEach(seat => {
+            const div = document.createElement('div');
+            div.className = 'seat ' + seat.status;
+            div.textContent = seat.seat_number;
+            if (!isTeacher && seat.status === 'available') {
+                div.onclick = () => selectSeat(seat.id, seat.seat_number, seat.status);
+            }
+            if (seat.id === selectedSeatId) div.classList.add('selected');
+            seatMap.appendChild(div);
+        });
+    }
+    function selectSeat(id, seatNum, status) {
+        if (status !== 'available') return;
+        selectedSeatId = id;
+        selectedSeatNum = seatNum;
+        document.getElementById('selectedSeatNum').textContent = seatNum;
+        document.getElementById('reservationForm').style.display = 'block';
+        renderSeatMap();
+    }
+    document.getElementById('startTime') && (document.getElementById('startTime').onchange = fetchSeats);
+    document.getElementById('endTime') && (document.getElementById('endTime').onchange = fetchSeats);
+    document.getElementById('reservationDate').onchange = fetchSeats;
+    document.getElementById('reservationForm').onsubmit = function(e) {
+        e.preventDefault();
+        if (!validateTimeRange()) return;
+        const startTime = document.getElementById('startTime').value;
+        const endTime = document.getElementById('endTime').value;
+        const date = document.getElementById('reservationDate').value;
+        const msg = document.getElementById('formMsg');
+        msg.textContent = '';
+        msg.className = '';
+        // Check daily limit before sending to backend
+        if (userRole === 'student' && dailyLimitMinutes > 0) {
+            // Calculate total reserved minutes for this day (from table)
+            let totalMinutes = 0;
+            document.querySelectorAll('#myReservationsTable tbody tr').forEach(tr => {
+                const tds = tr.querySelectorAll('td');
+                if (tds[1] && tds[1].textContent === date) {
+                    const s = tds[2].textContent.split(':');
+                    const e = tds[3].textContent.split(':');
+                    const mins = (parseInt(e[0])*60+parseInt(e[1])) - (parseInt(s[0])*60+parseInt(s[1]));
+                    totalMinutes += mins;
+                }
+            });
+            const s = startTime.split(':');
+            const e = endTime.split(':');
+            const newMins = (parseInt(e[0])*60+parseInt(e[1])) - (parseInt(s[0])*60+parseInt(s[1]));
+            if (totalMinutes + newMins > dailyLimitMinutes) {
+                msg.textContent = `You cannot reserve more than ${dailyLimitMinutes/60} hours per day as a ${dailyLimitText} year student.`;
+                msg.className = 'error';
+                return;
+            }
+        }
+        fetch('reserve_seat.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ seat_id: selectedSeatId, reservation_date: date, start_time: startTime, end_time: endTime })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                msg.textContent = 'Reservation successful! Confirmation: ' + data.confirmation_code;
+                msg.className = 'success';
+                fetchSeats();
+                fetchMyReservations(); // <-- Add this line to update reservations table immediately
+                document.getElementById('reservationForm').reset();
+                document.getElementById('reservationForm').style.display = 'none';
+                selectedSeatId = null;
+            } else {
+                msg.textContent = data.error || 'Error reserving seat.';
+                msg.className = 'error';
+            }
+        })
+        .catch(() => {
+            msg.textContent = 'Network error.';
+            msg.className = 'error';
+        });
+    };
+    function fetchMyReservations() {
+        fetch('my_reservations.php')
+            .then(res => res.json())
+            .then(data => {
+                const tbody = document.querySelector('#myReservationsTable tbody');
+                tbody.innerHTML = '';
+                data.forEach(row => {
+                    let seatCell = row.is_class_reservation ? 'Class Reserved' : row.seat_number;
+                    let actionCell = '';
+                    // Only show cancel button if reservation is not cancelled
+                    if (row.status === 'pending' && (!row.is_class_reservation || row.is_class_reservation)) {
+                        actionCell = `<button onclick='cancelMyReservation(${row.id || 0})'>Cancel</button>`;
+                    }
+                    if (row.is_class_reservation && row.status === 'pending') {
+                        actionCell = `<button onclick='cancelClassReservation("${row.confirmation_code}")'>Cancel</button>`;
+                    }
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td>${seatCell}</td><td>${row.reservation_date}</td><td>${row.start_time}</td><td>${row.end_time}</td><td>${row.status}</td><td>${row.confirmation_code || ''}</td><td>${actionCell}</td>`;
+                    tbody.appendChild(tr);
+                });
+            });
+    }
+    function cancelMyReservation(id) {
+        if (!confirm('Cancel this reservation?')) return;
+        fetch('cancel_reservation.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reservation_id: id })
+        })
+        .then(res => res.json())
+        .then(data => {
+            const msg = document.getElementById('myResMsg');
+            if (data.success) {
+                msg.textContent = 'Reservation cancelled.';
+                msg.className = 'success';
+                fetchMyReservations();
+                fetchSeats();
+                fetchNotifications(); // Refresh notifications
+            } else {
+                msg.textContent = data.error || 'Error cancelling reservation.';
+                msg.className = 'error';
+            }
+        });
+    }
+    function cancelClassReservation(confirmation_code) {
+        if (!confirm('Cancel this class reservation?')) return;
+        fetch('cancel_reservation.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ confirmation_code })
+        })
+        .then(res => res.json())
+        .then(data => {
+            const msg = document.getElementById('myResMsg');
+            if (data.success) {
+                msg.textContent = 'Class reservation cancelled.';
+                msg.className = 'success';
+                fetchMyReservations();
+                fetchSeats();
+                fetchNotifications(); // Refresh notifications
+            } else {
+                msg.textContent = data.error || 'Error cancelling reservation.';
+                msg.className = 'error';
+            }
+        });
+    }
+    document.getElementById('logoutBtn').onclick = function() {
+        fetch('logout.php')
+            .then(res => res.json())
+            .then(() => {
+                window.location.href = 'auth.html';
+            });
+    };
+    // Check if user is teacher and show/hide forms accordingly
+    fetch('login.php', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({check: true})})
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.role === 'teacher') {
+            isTeacher = true;
+            userRole = 'teacher';
+            document.getElementById('teacherReserve').style.display = '';
+            document.getElementById('studentReserveSection').style.display = 'none';
+            document.getElementById('reserveSeatTitle').style.display = 'none';
+        } else if (data.success && data.role === 'student') {
+            isTeacher = false;
+            userRole = 'student';
+            // Fetch year info
+            fetch('my_reservations.php')
+              .then(r => r.json())
+              .then(resList => {
+                // Try to get year from the first reservation, fallback to API
+                fetch('login.php', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({check: true})})
+                  .then(r2 => r2.json())
+                  .then(userData => {
+                    userYear = userData.year || null;
+                    if (!userYear && resList.length > 0 && resList[0].year) userYear = resList[0].year;
+                    if (userYear) {
+                      let limits = {'3': 240, '4': 360, '5': 480};
+                      dailyLimitMinutes = limits[userYear];
+                      dailyLimitText = userYear + 'rd';
+                      if (userYear === '4') dailyLimitText = '4th';
+                      if (userYear === '5') dailyLimitText = '5th';
+                      document.getElementById('studentReserveSection').insertAdjacentHTML('afterbegin', `<div id='yearInfo' style='margin-bottom:1em;color:#1976d2;font-weight:500;'>You are a <b>${dailyLimitText} year</b> student. Daily reservation limit: <b>${dailyLimitMinutes/60} hours</b>.</div>`);
+                    }
+                  });
+              });
+            document.getElementById('studentReserveSection').style.display = '';
+            document.getElementById('teacherReserve').style.display = 'none';
+            document.getElementById('reserveSeatTitle').style.display = '';
+            document.getElementById('studentTimeFields').style.display = '';
+        }
+      });
+    document.getElementById('reserveClassroomForm') && (document.getElementById('reserveClassroomForm').onsubmit = function(e) {
+        e.preventDefault();
+        if (!validateTeacherTimeRange()) return;
+        const date = document.getElementById('lessonDate').value;
+        const startTime = document.getElementById('lessonStartTime').value;
+        const endTime = document.getElementById('lessonEndTime').value;
+        const msg = document.getElementById('teacherMsg');
+        msg.textContent = '';
+        msg.className = '';
+        fetch('reserve_classroom.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reservation_date: date, start_time: startTime, end_time: endTime })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                msg.textContent = 'Classroom reserved for lesson! Confirmation: ' + data.confirmation_code;
+                msg.className = 'success';
+                fetchSeats();
+                fetchMyReservations();
+            } else {
+                msg.textContent = data.error || 'Error reserving classroom.';
+                msg.className = 'error';
+            }
+        })
+        .catch(() => {
+            msg.textContent = 'Network error.';
+            msg.className = 'error';
+        });
+    });
+    // --- Timeline-based seat availability view ---
+    function showTimelineBoard() {
+        const classroomId = 1;
+        const date = document.getElementById('reservationDate').value;
+        fetch(`seats.php?classroom_id=${classroomId}`)
+            .then(res => res.json())
+            .then(seatsData => {
+                const seats = Array.isArray(seatsData) ? seatsData : (seatsData.seats || []);
+                fetch(`seats.php?classroom_id=${classroomId}&reservation_date=${date}`)
+                    .then(res2 => res2.json())
+                    .then(reservations => {
+                        renderTimelineBoard(seats, reservations);
+                    });
+            });
+    }
+    function renderTimelineBoard(seats, reservations) {
+        const timelineStart = 8 * 60; // 08:00 in minutes
+        const timelineEnd = 23 * 60;  // 23:00 in minutes
+        const slotWidth = 24; // px per 10 min slot
+        const slots = [];
+        for (let t = timelineStart; t < timelineEnd; t += 10) {
+            slots.push(t);
+        }
+        // Build seat reservation map
+        const seatResMap = {};
+        seats.forEach(seat => seatResMap[seat.id] = []);
+        reservations.forEach(r => {
+            if (r.status === 'cancelled') return;
+            seatResMap[r.seat_id].push({
+                start: parseInt(r.start_time.split(':')[0]) * 60 + parseInt(r.start_time.split(':')[1]),
+                end: parseInt(r.end_time.split(':')[0]) * 60 + parseInt(r.end_time.split(':')[1]),
+                role: r.role,
+                status: r.status
+            });
+        });
+        // Timeline header
+        let html = '<div style="overflow-x:auto;"><table style="border-collapse:collapse;"><tr><th style="width:60px"></th>';
+        slots.forEach((t, i) => {
+            if (i % 6 === 0) { // every hour
+                html += `<th colspan="6" style="text-align:center;border:1px solid #ccc;">${String(Math.floor(t/60)).padStart(2,'0')}:00</th>`;
+            }
+        });
+        html += '</tr>';
+        // Timeline slots
+        html += '<tr><th></th>';
+        slots.forEach((t, i) => {
+            html += `<td style="width:${slotWidth}px;height:8px;padding:0;border:0;"></td>`;
+        });
+        html += '</tr>';
+        // Each seat row
+        seats.forEach(seat => {
+            html += `<tr><td style="border:1px solid #ccc;text-align:right;padding-right:4px;">${seat.seat_number}</td>`;
+            slots.forEach(t => {
+                // Check if reserved in this slot
+                const res = seatResMap[seat.id].find(r => t >= r.start && t < r.end);
+                let color = res ? (res.role === 'teacher' ? '#ffb2b2' : '#ffe082') : '#b2ffb2';
+                let tooltip = '';
+                if (res) {
+                    tooltip = res.role === 'teacher'
+                        ? `Reserved by teacher (${String(Math.floor(res.start/60)).padStart(2,'0')}:${String(res.start%60).padStart(2,'0')} - ${String(Math.floor(res.end/60)).padStart(2,'0')}:${String(res.end%60).padStart(2,'0')})`
+                        : `Reserved (${String(Math.floor(res.start/60)).padStart(2,'0')}:${String(res.start%60).padStart(2,'0')} - ${String(Math.floor(res.end/60)).padStart(2,'0')}:${String(res.end%60).padStart(2,'0')})`;
+                }
+                html += `<td class="timeline-slot" data-seat="${seat.id}" data-time="${t}" style="width:${slotWidth}px;height:24px;background:${color};border:1px solid #ccc;cursor:pointer;position:relative;" title="${tooltip}"></td>`;
+            });
+            html += '</tr>';
+        });
+        html += '</table></div>';
+        document.getElementById('timelineBoard').innerHTML = html;
+        // Selection logic
+        let isSelecting = false, selectStart = null, selectEnd = null;
+        document.querySelectorAll('.timeline-slot').forEach(cell => {
+            cell.onmousedown = e => {
+                isSelecting = true;
+                selectStart = parseInt(cell.dataset.time);
+                selectEnd = selectStart + 10;
+                updateSelection();
+            };
+            cell.onmouseover = e => {
+                if (isSelecting) {
+                    selectEnd = parseInt(cell.dataset.time) + 10;
+                    updateSelection();
+                }
+            };
+            cell.onmouseup = e => {
+                isSelecting = false;
+                updateSelection(true);
+            };
+            // Tooltip on hover
+            cell.onmouseenter = e => {
+                if (cell.title) {
+                    const tooltip = document.getElementById('tooltip');
+                    tooltip.textContent = cell.title;
+                    tooltip.style.display = 'block';
+                    tooltip.style.left = (e.pageX + 10) + 'px';
+                    tooltip.style.top = (e.pageY - 10) + 'px';
+                }
+            };
+            cell.onmouseleave = e => {
+                document.getElementById('tooltip').style.display = 'none';
+            };
+        });
+        function updateSelection(finalize) {
+            document.querySelectorAll('.timeline-slot').forEach(cell => {
+                const t = parseInt(cell.dataset.time);
+                if (selectStart !== null && selectEnd !== null && t >= Math.min(selectStart, selectEnd) && t < Math.max(selectStart, selectEnd)) {
+                    cell.style.outline = '2px solid #2196f3';
+                } else {
+                    cell.style.outline = '';
+                }
+            });
+            if (finalize && selectStart !== null && selectEnd !== null) {
+                // Show which seats are available in this interval
+                const intervalStart = Math.min(selectStart, selectEnd);
+                const intervalEnd = Math.max(selectStart, selectEnd);
+                seats.forEach(seat => {
+                    const reserved = seatResMap[seat.id].some(r => !(intervalEnd <= r.start || intervalStart >= r.end));
+                    document.querySelectorAll(`.timeline-slot[data-seat='${seat.id}']`).forEach(cell => {
+                        const t = parseInt(cell.dataset.time);
+                        if (t >= intervalStart && t < intervalEnd) {
+                            cell.style.opacity = reserved ? '0.5' : '1';
+                            cell.style.filter = reserved ? 'grayscale(1)' : '';
+                        } else {
+                            cell.style.opacity = '';
+                            cell.style.filter = '';
+                        }
+                    });
+                });
+            }
+        }
+        document.onmouseup = () => { isSelecting = false; };
+    }
+    // Add a button to show the timeline
+    const timelineBtn = document.createElement('button');
+    timelineBtn.textContent = 'Show Timeline View';
+    timelineBtn.style.margin = '1em 0';
+    timelineBtn.onclick = showTimelineBoard;
+    document.getElementById('timelineBoard').parentNode.insertBefore(timelineBtn, document.getElementById('timelineBoard'));
+    function fetchNotifications() {
+        fetch('notifications.php')
+            .then(res => res.json())
+            .then(data => {
+                const notifDiv = document.getElementById('notifications');
+                if (data.length > 0) {
+                    notifDiv.innerHTML = data.map(n => `<div class='notification' style='background:#ffe082;padding:8px;margin-bottom:4px;border-radius:4px;'>${n.message} <span style='color:#888;font-size:0.9em;'>(${n.created_at})</span> <button onclick="deleteNotification(${n.id})" style='float:right;'>Delete</button></div>`).join('');
+                } else {
+                    notifDiv.innerHTML = '';
+                }
+            });
+    }
+    function deleteNotification(id) {
+        fetch('delete_notification.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ notification_id: id })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                fetchNotifications();
+            }
+        });
+    }
+    fetchNotifications();
+    // Optionally, refresh notifications every 10 seconds
+    setInterval(fetchNotifications, 10000);
+    fetchMyReservations();
+
+    // The rest of the file remains unchanged, only manual reservation UI is shown.
+    // Add JS validation for time range
+function validateTimeRange() {
+    const start = document.getElementById('startTime').value;
+    const end = document.getElementById('endTime').value;
+    const msg = document.getElementById('formMsg');
+    if (start && (start < '08:30' || start > '23:00')) {
+        msg.textContent = 'Start time must be between 08:30 and 23:00.';
+        msg.className = 'error';
+        return false;
+    }
+    if (end && (end < '08:30' || end > '23:00')) {
+        msg.textContent = 'End time must be between 08:30 and 23:00.';
+        msg.className = 'error';
+        return false;
+    }
+    if (start && end && start >= end) {
+        msg.textContent = 'End time must be after start time.';
+        msg.className = 'error';
+        return false;
+    }
+    msg.textContent = '';
+    msg.className = '';
+    return true;
+}
+document.getElementById('startTime').addEventListener('change', validateTimeRange);
+document.getElementById('endTime').addEventListener('change', validateTimeRange);
+
+// Add JS validation for teacher time range
+function validateTeacherTimeRange() {
+    const start = document.getElementById('lessonStartTime').value;
+    const end = document.getElementById('lessonEndTime').value;
+    const msg = document.getElementById('teacherMsg');
+    if (start && (start < '08:30' || start > '23:00')) {
+        msg.textContent = 'Start time must be between 08:30 and 23:00.';
+        msg.className = 'error';
+        return false;
+    }
+    if (end && (end < '08:30' || end > '23:00')) {
+        msg.textContent = 'End time must be between 08:30 and 23:00.';
+        msg.className = 'error';
+        return false;
+    }
+    if (start && end && start >= end) {
+        msg.textContent = 'End time must be after start time.';
+        msg.className = 'error';
+        return false;
+    }
+    msg.textContent = '';
+    msg.className = '';
+    return true;
+}
+document.getElementById('lessonStartTime').addEventListener('change', validateTeacherTimeRange);
+document.getElementById('lessonEndTime').addEventListener('change', validateTeacherTimeRange);
+    </script>
+</body>
+</html>

@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Login</title>
+  <link href="https://fonts.googleapis.com/css?family=Roboto:400,500&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Roboto', Arial, sans-serif;
+      background: #f6f8fa;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 400px;
+      margin: 5em auto;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px #0001;
+      padding: 2.5em 2em 2.5em 2em;
+    }
+    h1 {
+      color: #1976d2;
+      font-weight: 500;
+      margin-top: 0;
+      text-align: center;
+    }
+    label {
+      display: block;
+      margin-top: 1.2em;
+      color: #333;
+      font-weight: 500;
+    }
+    input[type="text"], input[type="password"], select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #b0bec5;
+      border-radius: 6px;
+      margin-top: 0.5em;
+      font-size: 1em;
+      background: #f4f7fa;
+      transition: border 0.2s;
+    }
+    input:focus, select:focus {
+      border-color: #1976d2;
+      outline: none;
+    }
+    button {
+      background: #1976d2;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 10px 22px;
+      font-size: 1em;
+      font-weight: 500;
+      margin-top: 1.2em;
+      cursor: pointer;
+      transition: background 0.2s, box-shadow 0.2s;
+      box-shadow: 0 2px 8px #1976d220;
+      width: 100%;
+    }
+    button:hover {
+      background: #1256a3;
+    }
+    .error {
+      color: #d32f2f;
+      margin-top: 0.5em;
+      font-weight: 500;
+      text-align: center;
+    }
+    .success {
+      color: #388e3c;
+      margin-top: 0.5em;
+      font-weight: 500;
+      text-align: center;
+    }
+    #toggleAuth {
+      color: #1976d2;
+      cursor: pointer;
+      font-weight: 500;
+      text-align: center;
+      display: block;
+      margin-top: 1.5em;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 id="authTitle">Login</h1>
+    <form id="loginForm">
+      <label>Email:
+        <input type="text" id="loginEmail" required autocomplete="username">
+      </label>
+      <label>Password:
+        <input type="password" id="loginPassword" required autocomplete="current-password">
+      </label>
+      <button type="submit">Login</button>
+      <div id="loginMsg" class="error"></div>
+    </form>
+    <form id="registerForm" style="display:none;">
+      <label>Email:
+        <input type="text" id="registerEmail" required autocomplete="username">
+      </label>
+      <label>Password:
+        <input type="password" id="registerPassword" required autocomplete="new-password">
+      </label>
+      <label>Role:
+        <select id="registerRole" required>
+          <option value="">Select role</option>
+          <option value="student">Student</option>
+          <option value="teacher">Teacher</option>
+        </select>
+      </label>
+      <label id="yearLabel" style="display:none;">Year (for students):
+        <select id="registerYear">
+          <option value="">Select year</option>
+          <option value="3">3rd</option>
+          <option value="4">4th</option>
+          <option value="5">5th</option>
+        </select>
+      </label>
+      <button type="submit">Register</button>
+      <div id="registerMsg" class="error"></div>
+    </form>
+    <div id="toggleAuth">Don't have an account? Register</div>
+  </div>
+  <script>
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    const toggleAuth = document.getElementById('toggleAuth');
+    const authTitle = document.getElementById('authTitle');
+    let isLogin = true;
+    toggleAuth.onclick = function() {
+      isLogin = !isLogin;
+      loginForm.style.display = isLogin ? '' : 'none';
+      registerForm.style.display = isLogin ? 'none' : '';
+      authTitle.textContent = isLogin ? 'Login' : 'Register';
+      toggleAuth.textContent = isLogin ? "Don't have an account? Register" : "Already have an account? Login";
+    };
+    document.getElementById('loginForm').onsubmit = function(e) {
+        e.preventDefault();
+        const email = document.getElementById('loginEmail').value.trim();
+        const password = document.getElementById('loginPassword').value;
+        const msg = document.getElementById('loginMsg');
+        msg.textContent = '';
+        msg.className = '';
+        fetch('login.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                msg.textContent = 'Login successful! Redirecting...';
+                msg.className = 'success';
+                setTimeout(function() {
+                    if (data.role === 'admin') {
+                        window.location.href = 'admin_dashboard.html';
+                    } else {
+                        window.location.href = 'reservation_choice.html';
+                    }
+                }, 800);
+            } else {
+                msg.textContent = data.error || 'Error logging in.';
+                msg.className = 'error';
+            }
+        })
+        .catch(() => {
+            msg.textContent = 'Network error.';
+            msg.className = 'error';
+        });
+    };
+    document.getElementById('registerForm').onsubmit = function(e) {
+        e.preventDefault();
+        const email = document.getElementById('registerEmail').value.trim();
+        const password = document.getElementById('registerPassword').value;
+        const role = document.getElementById('registerRole').value;
+        const year = document.getElementById('registerYear').value;
+        const msg = document.getElementById('registerMsg');
+        msg.textContent = '';
+        msg.className = '';
+        // Build payload with role and year only if needed
+        let payload = { email, password, role };
+        if (role === 'student') {
+            payload.year = year;
+        }
+        fetch('register.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                msg.textContent = 'Registration successful! Please log in.';
+                msg.className = 'success';
+                setTimeout(() => {
+                    toggleAuth.click();
+                }, 800);
+            } else {
+                msg.textContent = data.error || 'Error registering.';
+                msg.className = 'error';
+            }
+        })
+        .catch(() => {
+            msg.textContent = 'Network error.';
+            msg.className = 'error';
+        });
+    };
+    document.getElementById('registerRole').addEventListener('change', function() {
+      const yearLabel = document.getElementById('yearLabel');
+      if (this.value === 'student') {
+        yearLabel.style.display = '';
+        document.getElementById('registerYear').setAttribute('required', 'required');
+      } else {
+        yearLabel.style.display = 'none';
+        document.getElementById('registerYear').removeAttribute('required');
+      }
+    });
+  </script>
+</body>
+</html>

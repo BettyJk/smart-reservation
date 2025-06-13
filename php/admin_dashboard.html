@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard</title>
+    <script>
+    fetch('login.php', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({check: true})})
+      .then(res => res.json())
+      .then(data => {
+        if (!data.success || data.role !== 'admin') {
+          window.location.href = 'auth.html';
+        }
+      });
+    </script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 2em; }
+        h1 { color: #333; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 2em; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background: #f0f0f0; }
+        button { padding: 6px 12px; }
+        .error { color: red; }
+        .success { color: green; }
+        .filter-bar { margin-bottom: 1em; }
+        .filter-bar label { margin-right: 1em; }
+    </style>
+</head>
+<body>
+    <h1>Admin Dashboard</h1>
+    <button id="logoutBtn" style="float:right;">Logout</button>
+    <button onclick="window.location.href='admin_register.html'">Register New User</button>
+    <div class="filter-bar">
+        <label>Date: <input type="date" id="filterDate"></label>
+        <label>User Email: <input type="text" id="filterUser"></label>
+        <label>Seat: <input type="text" id="filterSeat"></label>
+        <button onclick="fetchReservations()">Filter</button>
+    </div>
+    <table id="reservationsTable">
+        <thead>
+            <tr><th>ID</th><th>User</th><th>Role</th><th>Classroom</th><th>Seat</th><th>Date</th><th>Start</th><th>End</th><th>Status</th><th>Confirmation</th><th>Action</th></tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+    <div id="msg"></div>
+    <script>
+    document.getElementById('logoutBtn').onclick = function() {
+        fetch('logout.php')
+            .then(res => res.json())
+            .then(() => {
+                window.location.href = 'auth.html';
+            });
+    };
+
+    function fetchReservations() {
+        const date = document.getElementById('filterDate').value;
+        const user = document.getElementById('filterUser').value;
+        const seat = document.getElementById('filterSeat').value;
+        let url = `admin_reservations.php?`;
+        if (date) url += `date=${encodeURIComponent(date)}&`;
+        if (user) url += `user=${encodeURIComponent(user)}&`;
+        if (seat) url += `seat=${encodeURIComponent(seat)}&`;
+        fetch(url)
+            .then(res => res.json())
+            .then(data => {
+                const tbody = document.querySelector('#reservationsTable tbody');
+                tbody.innerHTML = '';
+                data.forEach(row => {
+                    const tr = document.createElement('tr');
+                    let actionBtn = '';
+                    if (row.status !== 'cancelled') {
+                        if (row.seat_number === 'Class Reserved') {
+                            actionBtn = `<button onclick='cancelReservation(null, "${row.confirmation_code}")'>Cancel</button>`;
+                        } else {
+                            actionBtn = `<button onclick='cancelReservation(${row.id})'>Cancel</button>`;
+                        }
+                    }
+                    tr.innerHTML = `<td>${row.id}</td><td>${row.email}</td><td>${row.role}</td><td>${row.classroom_name}</td><td>${row.seat_number}</td><td>${row.reservation_date}</td><td>${row.start_time}</td><td>${row.end_time}</td><td>${row.status}</td><td>${row.confirmation_code || ''}</td><td>${actionBtn}</td>`;
+                    tbody.appendChild(tr);
+                });
+            });
+    }
+    function cancelReservation(id, confirmation_code) {
+        if (!confirm('Cancel this reservation?')) return;
+        let body = {};
+        if (confirmation_code) {
+            body.confirmation_code = confirmation_code;
+        } else {
+            body.reservation_id = id;
+        }
+        fetch('cancel_reservation.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        })
+        .then(res => res.json())
+        .then(data => {
+            const msg = document.getElementById('msg');
+            if (data.success) {
+                msg.textContent = 'Reservation cancelled.';
+                msg.className = 'success';
+                fetchReservations();
+            } else {
+                msg.textContent = data.error || 'Error cancelling reservation.';
+                msg.className = 'error';
+            }
+        });
+    }
+    fetchReservations(); // Ensure table loads on page open
+    // Optionally, add polling for auto-refresh:
+    setInterval(fetchReservations, 5000); // Refresh every 5 seconds
+    </script>
+</body>
+</html>

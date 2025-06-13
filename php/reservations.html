@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Classroom Reservation - Reservations</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 2em; }
+        h1 { color: #333; }
+        table { border-collapse: collapse; width: 80%; margin-bottom: 2em; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background: #f0f0f0; }
+        form { margin-bottom: 2em; }
+        label { display: block; margin-top: 1em; }
+        input, select { width: 100%; padding: 6px; }
+        button { margin-top: 1em; padding: 8px 16px; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <h1>Reservations</h1>
+    <form id="addReservationForm">
+        <label>User ID:
+            <input type="number" id="user_id" required>
+        </label>
+        <label>Classroom:
+            <select id="classroom_id" required></select>
+        </label>
+        <label>Date & Time:
+            <input type="datetime-local" id="reserved_at" required>
+        </label>
+        <label>Duration (minutes):
+            <input type="number" id="duration_minutes" min="1" required>
+        </label>
+        <button type="submit">Add Reservation</button>
+        <div id="formMsg"></div>
+    </form>
+    <table id="reservationsTable">
+        <thead>
+            <tr><th>ID</th><th>User ID</th><th>Username</th><th>Classroom</th><th>Date & Time</th><th>Duration (min)</th></tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+    <script>
+    function fetchClassrooms() {
+        fetch('classrooms.php')
+            .then(res => res.json())
+            .then(data => {
+                const select = document.getElementById('classroom_id');
+                select.innerHTML = '';
+                data.forEach(row => {
+                    const option = document.createElement('option');
+                    option.value = row.id;
+                    option.textContent = row.name + (row.location ? ' (' + row.location + ')' : '');
+                    select.appendChild(option);
+                });
+            });
+    }
+    function fetchReservations() {
+        fetch('reservations.php')
+            .then(res => res.json())
+            .then(data => {
+                const tbody = document.querySelector('#reservationsTable tbody');
+                tbody.innerHTML = '';
+                data.forEach(row => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td>${row.id}</td><td>${row.user_id}</td><td>${row.username}</td><td>${row.classroom_name}</td><td>${row.reserved_at.replace('T',' ').replace('Z','')}</td><td>${row.duration_minutes}</td>`;
+                    tbody.appendChild(tr);
+                });
+            });
+    }
+    document.getElementById('addReservationForm').onsubmit = function(e) {
+        e.preventDefault();
+        const user_id = parseInt(document.getElementById('user_id').value, 10);
+        const classroom_id = parseInt(document.getElementById('classroom_id').value, 10);
+        const reserved_at = document.getElementById('reserved_at').value;
+        const duration_minutes = parseInt(document.getElementById('duration_minutes').value, 10);
+        const msg = document.getElementById('formMsg');
+        msg.textContent = '';
+        msg.className = '';
+        fetch('add_reservation.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id, classroom_id, reserved_at, duration_minutes })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                msg.textContent = 'Reservation added!';
+                msg.className = 'success';
+                fetchReservations();
+                document.getElementById('addReservationForm').reset();
+            } else {
+                msg.textContent = data.error || 'Error adding reservation.';
+                msg.className = 'error';
+            }
+        })
+        .catch(() => {
+            msg.textContent = 'Network error.';
+            msg.className = 'error';
+        });
+    };
+    fetchClassrooms();
+    fetchReservations();
+    </script>
+</body>
+</html>

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Classroom Reservation - Classrooms</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 2em; }
+        h1 { color: #333; }
+        table { border-collapse: collapse; width: 50%; margin-bottom: 2em; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background: #f0f0f0; }
+        form { margin-bottom: 2em; }
+        label { display: block; margin-top: 1em; }
+        input[type="text"] { width: 100%; padding: 6px; }
+        button { margin-top: 1em; padding: 8px 16px; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <h1>Classrooms</h1>
+    <form id="addClassroomForm">
+        <label>Classroom Name:
+            <input type="text" id="name" required>
+        </label>
+        <label>Location:
+            <input type="text" id="location">
+        </label>
+        <button type="submit">Add Classroom</button>
+        <div id="formMsg"></div>
+    </form>
+    <table id="classroomsTable">
+        <thead>
+            <tr><th>ID</th><th>Name</th><th>Location</th></tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+    <script>
+    function fetchClassrooms() {
+        fetch('classrooms.php')
+            .then(res => res.json())
+            .then(data => {
+                const tbody = document.querySelector('#classroomsTable tbody');
+                tbody.innerHTML = '';
+                data.forEach(row => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td>${row.id}</td><td>${row.name}</td><td>${row.location || ''}</td>`;
+                    tbody.appendChild(tr);
+                });
+            });
+    }
+    document.getElementById('addClassroomForm').onsubmit = function(e) {
+        e.preventDefault();
+        const name = document.getElementById('name').value.trim();
+        const location = document.getElementById('location').value.trim();
+        const msg = document.getElementById('formMsg');
+        msg.textContent = '';
+        msg.className = '';
+        fetch('add_classroom.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, location })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                msg.textContent = 'Classroom added!';
+                msg.className = 'success';
+                fetchClassrooms();
+                document.getElementById('addClassroomForm').reset();
+            } else {
+                msg.textContent = data.error || 'Error adding classroom.';
+                msg.className = 'error';
+            }
+        })
+        .catch(() => {
+            msg.textContent = 'Network error.';
+            msg.className = 'error';
+        });
+    };
+    fetchClassrooms();
+    </script>
+</body>
+</html>
